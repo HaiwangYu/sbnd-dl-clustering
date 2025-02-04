@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 
 from scipy.spatial import ConvexHull
 
-def visualize_polyhedrons_plotly(blobs):
+def visualize_polyhedrons(blobs):
     """
     Visualize polyhedrons using plotly.
 
@@ -17,24 +17,31 @@ def visualize_polyhedrons_plotly(blobs):
     """
     fig = go.Figure()
 
+    nblobs = 0
     for blob in blobs:
         num_vertices = int(round(blob[1]))
+        print(f'num_vertices: {num_vertices}')
         vertices = blob[2:2+num_vertices*3].reshape(num_vertices, 3)
         
-        print(f'bf: {vertices}')
-
         hull = ConvexHull(vertices)
         sorted_vertices = vertices[hull.vertices]
-        print(f'af: {sorted_vertices}')
 
-        fig.add_trace(go.Mesh3d(
-            x=sorted_vertices[:, 0],
-            y=sorted_vertices[:, 1],
-            z=sorted_vertices[:, 2],
+        # Create the convex volume
+        x, y, z = sorted_vertices[:, 0], sorted_vertices[:, 1], sorted_vertices[:, 2]
+        convex_volume = go.Mesh3d(
+            x=x,
+            y=y,
+            z=z,
+            i=hull.simplices[:, 0],
+            j=hull.simplices[:, 1],
+            k=hull.simplices[:, 2],
             color='lightblue',
-            opacity=1
-        ))
-        break
+            opacity=0.2
+        )
+        fig.add_trace(convex_volume)
+        nblobs += 1
+        # if nblobs > 10:
+        #     break
 
     fig.update_layout(
         scene=dict(
@@ -43,30 +50,7 @@ def visualize_polyhedrons_plotly(blobs):
             zaxis_title='Z'
         )
     )
-    fig.show()
-
-def visualize_polyhedrons(blobs):
-    """
-    Visualize polyhedrons using matplotlib.
-    
-    Args:
-        blobs (numpy.ndarray): 2D array representing the polyhedrons.
-    """
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-
-    for blob in blobs:
-        num_vertices = int(round(blob[1]))
-        vertices = blob[2:2+num_vertices*3].reshape(num_vertices, 3)
-        hull = ConvexHull(vertices)
-        sorted_vertices = vertices[hull.vertices]
-        ax.plot_trisurf(sorted_vertices[:, 0], sorted_vertices[:, 1], sorted_vertices[:, 2])
-        break
-
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-    plt.show()
+    return fig
 
 def visualize_graph_3d(x, edge_index, node_labels=None, node_size=2, edge_width=1):
    """
@@ -150,20 +134,32 @@ aedges = data['ppedges']
 # aedges = np.array([[0,1]])
 # print(f'apoints: {apoints.shape}')
 # print(f'aedges: {aedges.shape}')
-visualize_polyhedrons_plotly(ablobs)
-visualize_polyhedrons(ablobs)
-exit()
+# fig = visualize_polyhedrons(ablobs)
+# fig.show()
 
 # Convert to torch tensors
 apoints = torch.from_numpy(apoints)
 aedges = torch.from_numpy(aedges).long()[:, :2].t()
-print(aedges)
+# print(aedges)
 
 # Create graph data object
 data = Data(x=apoints, edge_index=aedges)
 
 # Print the graph data
-print(data)
-fig = visualize_graph_3d(data.x, data.edge_index, node_size=2, edge_width=1)
-fig.show()
+# print(data)
+# fig = visualize_graph_3d(data.x, data.edge_index, node_size=2, edge_width=1)
+# fig.show()
 
+
+# Visualize polyhedrons
+fig_polyhedrons = visualize_polyhedrons(ablobs)
+
+# Visualize graph in 3D
+fig_graph_3d = visualize_graph_3d(data.x, data.edge_index, node_size=2, edge_width=1)
+
+# Overlay the figures
+fig_polyhedrons.add_trace(fig_graph_3d.data[0])
+fig_polyhedrons.add_trace(fig_graph_3d.data[1])
+
+# Show the overlayed figure
+fig_polyhedrons.show()
