@@ -1,5 +1,73 @@
 import torch
 from torch_geometric.data import Data
+
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+import plotly.graph_objects as go
+
+from scipy.spatial import ConvexHull
+
+def visualize_polyhedrons_plotly(blobs):
+    """
+    Visualize polyhedrons using plotly.
+
+    Args:
+        blobs (numpy.ndarray): 2D array representing the polyhedrons.
+    """
+    fig = go.Figure()
+
+    for blob in blobs:
+        num_vertices = int(round(blob[1]))
+        vertices = blob[2:2+num_vertices*3].reshape(num_vertices, 3)
+        
+        print(f'bf: {vertices}')
+
+        hull = ConvexHull(vertices)
+        sorted_vertices = vertices[hull.vertices]
+        print(f'af: {sorted_vertices}')
+
+        fig.add_trace(go.Mesh3d(
+            x=sorted_vertices[:, 0],
+            y=sorted_vertices[:, 1],
+            z=sorted_vertices[:, 2],
+            color='lightblue',
+            opacity=1
+        ))
+        break
+
+    fig.update_layout(
+        scene=dict(
+            xaxis_title='X',
+            yaxis_title='Y',
+            zaxis_title='Z'
+        )
+    )
+    fig.show()
+
+def visualize_polyhedrons(blobs):
+    """
+    Visualize polyhedrons using matplotlib.
+    
+    Args:
+        blobs (numpy.ndarray): 2D array representing the polyhedrons.
+    """
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    for blob in blobs:
+        num_vertices = int(round(blob[1]))
+        vertices = blob[2:2+num_vertices*3].reshape(num_vertices, 3)
+        hull = ConvexHull(vertices)
+        sorted_vertices = vertices[hull.vertices]
+        ax.plot_trisurf(sorted_vertices[:, 0], sorted_vertices[:, 1], sorted_vertices[:, 2])
+        break
+
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    plt.show()
+
 def visualize_graph_3d(x, edge_index, node_labels=None, node_size=2, edge_width=1):
    """
    Visualize a graph in 3D using plotly.
@@ -75,8 +143,16 @@ for file in data.files:
 data = np.load('graph2json.npz')
 
 # Extract 'apoints' and 'aedges'
-apoints = data['apoints']
-aedges = data['aedges']
+ablobs = data['blobs']
+apoints = data['points']
+aedges = data['ppedges']
+# apoints = data['ablobs']
+# aedges = np.array([[0,1]])
+# print(f'apoints: {apoints.shape}')
+# print(f'aedges: {aedges.shape}')
+visualize_polyhedrons_plotly(ablobs)
+visualize_polyhedrons(ablobs)
+exit()
 
 # Convert to torch tensors
 apoints = torch.from_numpy(apoints)
