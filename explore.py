@@ -20,8 +20,9 @@ def visualize_polyhedrons(blobs):
     nblobs = 0
     for blob in blobs:
         num_vertices = int(round(blob[1]))
-        print(f'num_vertices: {num_vertices}')
+        # print(f'num_vertices: {num_vertices}')
         vertices = blob[2:2+num_vertices*3].reshape(num_vertices, 3)
+        # print(f'vertices: {vertices}')
         
         hull = ConvexHull(vertices)
         sorted_vertices = vertices[hull.vertices]
@@ -40,16 +41,16 @@ def visualize_polyhedrons(blobs):
         )
         fig.add_trace(convex_volume)
         nblobs += 1
-        # if nblobs > 10:
-        #     break
+        # if nblobs > 0:
+        #     exit()
 
-    fig.update_layout(
-        scene=dict(
-            xaxis_title='X',
-            yaxis_title='Y',
-            zaxis_title='Z'
-        )
-    )
+    # fig.update_layout(
+    #     scene=dict(
+    #         xaxis_title='X',
+    #         yaxis_title='Y',
+    #         zaxis_title='Z'
+    #     )
+    # )
     return fig
 
 def visualize_graph_3d(x, edge_index, node_labels=None, node_size=2, edge_width=1):
@@ -95,17 +96,17 @@ def visualize_graph_3d(x, edge_index, node_labels=None, node_size=2, edge_width=
        )
    ])
 
-   fig.update_layout(
-       showlegend=True,
-       scene=dict(
-           xaxis_title='X',
-           yaxis_title='Y',
-           zaxis_title='Z',
-           camera=dict(
-               eye=dict(x=1, y=0, z=0)
-           )
-       )
-   )
+#    fig.update_layout(
+#        showlegend=True,
+#        scene=dict(
+#            xaxis_title='X',
+#            yaxis_title='Y',
+#            zaxis_title='Z',
+#            camera=dict(
+#                eye=dict(x=1, y=0, z=0)
+#            )
+#        )
+#    )
    
    return fig
 
@@ -162,4 +163,6 @@ fig_polyhedrons.add_trace(fig_graph_3d.data[0])
 fig_polyhedrons.add_trace(fig_graph_3d.data[1])
 
 # Show the overlayed figure
+
+fig_polyhedrons.update_layout(scene=dict(aspectmode='data'))
 fig_polyhedrons.show()
