@@ -1,0 +1,1 @@
+../wire-cell-toolkit/setup.sh

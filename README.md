@@ -4,6 +4,12 @@
 
 ## clustering input data
 
+```bash
+lar -n 1 --nskip 1 -c celltree_sbnd.fcl -s lynn-sim.root -o tmp.root
+lar -n 1 --nskip 1 -c truthdump.fcl -s lynn-sim.root -o tmp.root
+./upload-to-bee.sh bee/bee_upload.zip
+```
+
 Avinay-Jan27
 ```bash!
 /pnfs/sbnd/scratch/users/abhat/v09_91_02_0201/BNB_Cosmics_NCPi0/20250126
