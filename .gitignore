@@ -1,0 +1,7 @@
+bee
+*.root
+*.json
+*log
+*.db
+*.zip
+*.swp
