@@ -55,4 +55,5 @@ physics.analyzers.wirecell.drift_speed : 1.56
 physics.analyzers.wirecell.t0_corrected : true
 physics.analyzers.wirecell.saveMC : true 
 physics.analyzers.wirecell.mcOption : "nuOnly"
+physics.analyzers.wirecell.saveMCTrackPoints : false
 

@@ -19,9 +19,15 @@ def filter_json_by_cluster_id(json_input_path, json_output_path, target_cluster_
     
     # 2. Extract the cluster_id array
     cluster_ids = data["cluster_id"]
+    from collections import Counter
+    counter = Counter(cluster_ids)
+    sorted_by_count = sorted(counter.items(), key=lambda x: x[1], reverse=True)
+    for cluster_id, count in sorted_by_count:
+        print(f"TrackId {cluster_id} has {count} points.")
 
     # 3. Identify which entries have cluster_id == target_cluster_id
-    indices_to_keep = [i for i, cid in enumerate(cluster_ids) if cid == target_cluster_id]
+    indices_to_keep = [i for i, cid in enumerate(cluster_ids) if cid > target_cluster_id]
+
 
     # 4. Create a new dictionary to store the filtered data
     filtered_data = {}
@@ -44,7 +50,18 @@ def filter_json_by_cluster_id(json_input_path, json_output_path, target_cluster_
 
 # Example usage:
 if __name__ == "__main__":
-    input_path = "bee/data/0/0-truthDepo.json"
-    output_path = "bee/data/0/0-truthDepo-filter.json"
-    filter_json_by_cluster_id(input_path, output_path, target_cluster_id=0)
-    print(f"Filtered JSON saved to {output_path}")
+    input_paths = [
+        "bee/data/0/0-truthDepo.json",
+        # "bee/data/1/1-truthDepo.json",
+        # "bee/data/2/2-truthDepo.json",
+        # "bee/data/3/3-truthDepo.json",
+    ]
+    output_path = [
+        "bee/data/0/0-truthDepo-filter.json",
+        # "bee/data/1/1-truthDepo-filter.json",
+        # "bee/data/2/2-truthDepo-filter.json",
+        # "bee/data/3/3-truthDepo-filter.json",
+    ]
+    for input_path, output_path in zip(input_paths, output_path):
+        print(f"Filtering {input_path} -> {output_path}")
+        filter_json_by_cluster_id(input_path, output_path, target_cluster_id=0)

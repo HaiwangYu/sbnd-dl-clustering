@@ -1,1 +1,1 @@
-../wire-cell-toolkit/setup.sh
+/exp/sbnd/app/users/yuhw/sbnd-op/setup.sh

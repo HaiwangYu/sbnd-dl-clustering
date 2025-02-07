@@ -1,13 +1,30 @@
 # sbnd-dl-clustering
 
-##
+## quick setup on gpvms
+This is based on local build of `wirecell`, `larwirecell` off the `sbndcode v09_91_02`
+- wirecell branch: master: https://github.com/WireCell/wire-cell-toolkit/tree/master
+- larwirecell branch: https://github.com/HaiwangYu/larwirecell/tree/qlmatch-ls991
+- larreco tag v09_25_04 to satisfy the dependencies: https://github.com/LArSoft/larreco/tree/v09_25_04
 
-## clustering input data
+```bash
+git clone https://github.com/HaiwangYu/sbnd-dl-clustering.git dl-clustering
+cd dl-clustering
+source setup.sh
+lar -n 1 --nskip 1 -c celltree_sbnd.fcl -s lynn-sim.root -o tmp.root
+./zip-upload.sh
+```
+
+
+## other notes
+
+```bash
+lar -n 1 --nskip 1 -c truthdump.fcl -s lynn-sim.root -o tmp.root
+```
 
 ```bash
 lar -n 1 --nskip 1 -c celltree_sbnd.fcl -s lynn-sim.root -o tmp.root
-lar -n 1 --nskip 1 -c truthdump.fcl -s lynn-sim.root -o tmp.root
-./upload-to-bee.sh bee/bee_upload.zip
+python filter-json.py
+./zip-upload.sh
 ```
 
 Avinay-Jan27
