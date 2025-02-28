@@ -19,9 +19,14 @@ def visualize_polyhedrons(blobs):
 
     nblobs = 0
     for blob in blobs:
+        # print(f'blob: {blob}')
+        # exit()
         num_vertices = int(round(blob[1]))
         # print(f'num_vertices: {num_vertices}')
         vertices = blob[2:2+num_vertices*3].reshape(num_vertices, 3)
+        if vertices.shape[0] == 0:
+            print('Empty vertices')
+            continue
         # print(f'vertices: {vertices}')
         
         hull = ConvexHull(vertices)
@@ -110,59 +115,66 @@ def visualize_graph_3d(x, edge_index, node_labels=None, node_size=2, edge_width=
    
    return fig
 
-import numpy as np
-import torch
-from torch_geometric.data import Data
-
-# Load the file
-data = np.load('graph2json.npz')
-
-# Print the content
-print(data.files)
-for file in data.files:
-    print(file)
-    print(data[file].shape)
-    print(data[file])
-
-# Load the file
-data = np.load('graph2json.npz')
-
-# Extract 'apoints' and 'aedges'
-ablobs = data['blobs']
-apoints = data['points']
-aedges = data['ppedges']
-# apoints = data['ablobs']
-# aedges = np.array([[0,1]])
-# print(f'apoints: {apoints.shape}')
-# print(f'aedges: {aedges.shape}')
-# fig = visualize_polyhedrons(ablobs)
-# fig.show()
-
-# Convert to torch tensors
-apoints = torch.from_numpy(apoints)
-aedges = torch.from_numpy(aedges).long()[:, :2].t()
-# print(aedges)
-
-# Create graph data object
-data = Data(x=apoints, edge_index=aedges)
-
-# Print the graph data
-# print(data)
-# fig = visualize_graph_3d(data.x, data.edge_index, node_size=2, edge_width=1)
-# fig.show()
+if __name__ == '__main__':
+    import numpy as np
+    import torch
+    from torch_geometric.data import Data
+    import argparse
 
 
-# Visualize polyhedrons
-fig_polyhedrons = visualize_polyhedrons(ablobs)
+    # Create argument parser
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--input_file', type=str,
+                        default='../wcp-porting-img/dunefd/groupingcrm0-0groupingcrm0-0-1-1-1.npz',
+                        help='Path to the input file')
+    args = parser.parse_args()
 
-# Visualize graph in 3D
-fig_graph_3d = visualize_graph_3d(data.x, data.edge_index, node_size=2, edge_width=1)
+    # Load the file
+    data = np.load(args.input_file)
 
-# Overlay the figures
-fig_polyhedrons.add_trace(fig_graph_3d.data[0])
-fig_polyhedrons.add_trace(fig_graph_3d.data[1])
+    # Print the content
+    print(data.files)
+    for file in data.files:
+        print(file)
+        print(data[file].shape)
+        print(data[file])
 
-# Show the overlayed figure
+    # Extract 'apoints' and 'aedges'
+    ablobs = data['blobs']
+    apoints = data['points']
+    aedges = data['ppedges']
+    # apoints = data['ablobs']
+    # aedges = np.array([[0,1]])
+    # print(f'apoints: {apoints.shape}')
+    # print(f'aedges: {aedges.shape}')
+    # fig = visualize_polyhedrons(ablobs)
+    # fig.show()
 
-fig_polyhedrons.update_layout(scene=dict(aspectmode='data'))
-fig_polyhedrons.show()
+    # Convert to torch tensors
+    apoints = torch.from_numpy(apoints)
+    aedges = torch.from_numpy(aedges).long()[:, :2].t()
+    # print(aedges)
+
+    # Create graph data object
+    data = Data(x=apoints, edge_index=aedges)
+
+    # Print the graph data
+    # print(data)
+    # fig = visualize_graph_3d(data.x, data.edge_index, node_size=2, edge_width=1)
+    # fig.show()
+
+
+    # Visualize polyhedrons
+    fig_polyhedrons = visualize_polyhedrons(ablobs)
+
+    # Visualize graph in 3D
+    fig_graph_3d = visualize_graph_3d(data.x, data.edge_index, node_size=2, edge_width=1)
+
+    # Overlay the figures
+    fig_polyhedrons.add_trace(fig_graph_3d.data[0])
+    fig_polyhedrons.add_trace(fig_graph_3d.data[1])
+
+    # Show the overlayed figure
+
+    fig_polyhedrons.update_layout(scene=dict(aspectmode='data'))
+    fig_polyhedrons.show()
