@@ -6,16 +6,27 @@ This is based on local build of `wirecell`, `larwirecell` off the `sbndcode v09_
 - larwirecell branch: https://github.com/HaiwangYu/larwirecell/tree/qlmatch-ls991
 - larreco tag v09_25_04 to satisfy the dependencies: https://github.com/LArSoft/larreco/tree/v09_25_04
 
+
+### Truth dump
 ```bash
 git clone https://github.com/HaiwangYu/sbnd-dl-clustering.git dl-clustering
 cd dl-clustering
+# enter container with /pnfs
 source setup.sh
 lar -n 1 --nskip 1 -c celltree_sbnd.fcl -s lynn-sim.root -o tmp.root
-./zip-upload.sh
+./zip-upload.sh # for BEE json only
 ```
+
+### Reco dump
+
+### Post processing
 
 
 ## other notes
+
+```bash
+rsync sbndbuild03.fnal.gov:/exp/sbnd/app/users/yuhw/dl-clustering/celltree.root .
+```
 
 ```bash
 lar -n 1 --nskip 1 -c truthdump.fcl -s lynn-sim.root -o tmp.root
