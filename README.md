@@ -14,6 +14,7 @@ cd dl-clustering
 # enter container with /pnfs
 source setup.sh
 lar -n 1 --nskip 1 -c celltree_sbnd.fcl -s lynn-sim.root -o tmp.root
+lar -n 1 --nskip 1 -c wcls-img-clus.fcl -s lynn-sim.root -o tmp.root
 ./zip-upload.sh # for BEE json only
 ```
 

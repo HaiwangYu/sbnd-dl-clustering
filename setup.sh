@@ -1,1 +1,1 @@
-/exp/sbnd/app/users/yuhw/sbnd-op/setup.sh
+/exp/sbnd/app/users/yuhw/setup.sh
