@@ -25,7 +25,7 @@ def visualize_polyhedrons(blobs):
         # print(f'num_vertices: {num_vertices}')
         vertices = blob[2:2+num_vertices*3].reshape(num_vertices, 3)
         if vertices.shape[0] == 0:
-            print('Empty vertices')
+            # print('Empty vertices')
             continue
         # print(f'vertices: {vertices}')
         
@@ -59,61 +59,62 @@ def visualize_polyhedrons(blobs):
     return fig
 
 def visualize_graph_3d(x, edge_index, node_labels=None, node_size=2, edge_width=1):
-   """
-   Visualize a graph in 3D using plotly.
-   
-   Args:
-       x (torch.Tensor): Node features/positions (N x 3)
-       edge_index (torch.Tensor): Edge indices (2 x E)
-       node_labels (list, optional): Labels for nodes. Default: None
-       node_size (int): Size of nodes. Default: 10
-       edge_width (int): Width of edges. Default: 2
-   """
-   import plotly.graph_objects as go
+    """
+    Visualize a graph in 3D using plotly.
+    
+    Args:
+        x (torch.Tensor): Node features/positions (N x 3)
+        edge_index (torch.Tensor): Edge indices (2 x E)
+        node_labels (list, optional): Labels for nodes. Default: None
+        node_size (int): Size of nodes. Default: 10
+        edge_width (int): Width of edges. Default: 2
+    """
+    import plotly.graph_objects as go
 
-   if node_labels is None:
-       node_labels = [f'Node {i}' for i in range(len(x))]
+    if node_labels is None:
+        node_labels = [f'Node {i}' for i in range(len(x))]
 
-   # Prepare edge coordinates
-   edges_x, edges_y, edges_z = [], [], []
-   for edge in edge_index.t():
-       start_node = x[edge[0]]
-       end_node = x[edge[1]]
-       edges_x.extend([start_node[0], end_node[0], None])
-       edges_y.extend([start_node[1], end_node[1], None])
-       edges_z.extend([start_node[2], end_node[2], None])
-
-   fig = go.Figure(data=[
-       # Nodes
-       go.Scatter3d(
-           x=x[:,0], y=x[:,1], z=x[:,2],
-           mode='markers+text',
-           marker=dict(size=node_size),
-           # text=node_labels,
-           name='Nodes'
-       ),
-       # Edges
-       go.Scatter3d(
-           x=edges_x, y=edges_y, z=edges_z,
+    # Prepare edge coordinates
+    edges_x, edges_y, edges_z = [], [], []
+    for edge in edge_index.t():
+        start_node = x[edge[0]]
+        end_node = x[edge[1]]
+        edges_x.extend([start_node[0], end_node[0], None])
+        edges_y.extend([start_node[1], end_node[1], None])
+        edges_z.extend([start_node[2], end_node[2], None])
+    nskip = 10
+    fig = go.Figure(data=[
+        # Nodes
+        go.Scatter3d(
+            x=x[::nskip,0], y=x[::nskip,1], z=x[::nskip,2],
+            mode='markers+text',
+            marker=dict(size=node_size),
+            # text=node_labels,
+            name='Nodes'
+        ),
+        # Edges
+        go.Scatter3d(
+           x=edges_x[::], y=edges_y[::], z=edges_z[::],
            mode='lines',
            line=dict(color='black', width=edge_width),
            name='Edges'
-       )
-   ])
+        )
+    ])
 
-#    fig.update_layout(
-#        showlegend=True,
-#        scene=dict(
-#            xaxis_title='X',
-#            yaxis_title='Y',
-#            zaxis_title='Z',
-#            camera=dict(
-#                eye=dict(x=1, y=0, z=0)
-#            )
-#        )
-#    )
-   
-   return fig
+    # fig.update_layout(
+    #     showlegend=True,
+    #     scene=dict(
+    #         xaxis_title='X',
+    #         yaxis_title='Y',
+    #         zaxis_title='Z',
+    #         camera=dict(
+    #             up=dict(x=0, y=1, z=0),    # Y is up (vertical)
+    #             eye=dict(x=0, y=0, z=2),  # Looking along the X-axis
+    #         )
+    #     )
+    # )
+    
+    return fig
 
 if __name__ == '__main__':
     import numpy as np
@@ -159,9 +160,10 @@ if __name__ == '__main__':
     data = Data(x=apoints, edge_index=aedges)
 
     # Print the graph data
-    # print(data)
-    # fig = visualize_graph_3d(data.x, data.edge_index, node_size=2, edge_width=1)
-    # fig.show()
+    print(data)
+    fig = visualize_graph_3d(data.x, data.edge_index, node_size=2, edge_width=1)
+    fig.show()
+    exit()
 
 
     # Visualize polyhedrons
