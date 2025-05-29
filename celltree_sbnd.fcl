@@ -57,21 +57,30 @@ physics.analyzers.wirecell.nRawSamples : 3400
 physics.analyzers.wirecell.saveRaw: true 
 physics.analyzers.wirecell.RawDigitLabel: "simtpc2d:daq"
 #physics.analyzers.wirecell.RawDigitLabel: "daq"
-physics.analyzers.wirecell.saveSimChannel: true 
+
+physics.analyzers.wirecell.saveSimChannel: true
 physics.analyzers.wirecell.SimChannelLabel: "simtpc2d:simpleSC"
 #physics.analyzers.wirecell.SimChannelLabel: "simdrift"
+physics.analyzers.wirecell.tdcOffset : -3400
 
 physics.analyzers.wirecell.saveCalib: true 
 physics.analyzers.wirecell.CalibLabel: "wctsp:gauss"
 physics.analyzers.wirecell.saveDNNCalib: false
 physics.analyzers.wirecell.DNNCalibLabel: "sptpc2d:dnnsp"
 
-physics.analyzers.wirecell.saveJSON : false
+physics.analyzers.wirecell.saveJSON : true
 physics.analyzers.wirecell.SpacePointLabels : ["truthDepo"]
 physics.analyzers.wirecell.SimEnergyDepositLabel : "ionandscint:"
+# edepos clustering
+physics.analyzers.wirecell.t0_corrected : false
 physics.analyzers.wirecell.drift_speed : 1.56
-physics.analyzers.wirecell.t0_corrected : true
-physics.analyzers.wirecell.saveMC : true 
+physics.analyzers.wirecell.first_cluster_id : 0 # unit: integer: ID assigned to first cluster.
+physics.analyzers.wirecell.save_apa : "both" # "apa0", "apa1", "both"
+physics.analyzers.wirecell.readout_start : -200 # unit: us. -205? Start time of readout window
+physics.analyzers.wirecell.readout_end : 1500 # unit: us. different? End time of readout window
+physics.analyzers.wirecell.clustering_delta_t : 25 # 25 ns. Delta t for clustering edepos
+physics.analyzers.wirecell.z_offset : 0.5 # unit: cm. Add this offset to SED z position
+
+physics.analyzers.wirecell.saveMC : false 
 physics.analyzers.wirecell.mcOption : "nuOnly"
 physics.analyzers.wirecell.saveMCTrackPoints : false
-

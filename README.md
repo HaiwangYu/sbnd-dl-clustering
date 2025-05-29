@@ -13,9 +13,13 @@ git clone https://github.com/HaiwangYu/sbnd-dl-clustering.git dl-clustering
 cd dl-clustering
 # enter container with /pnfs
 source setup.sh
-lar -n 1 --nskip 1 -c celltree_sbnd.fcl -s lynn-sim.root -o tmp.root
 lar -n 1 --nskip 1 -c wcls-img-clus.fcl -s lynn-sim.root -o tmp.root
-./zip-upload.sh # for BEE json only
+lar -n 1 --nskip 1 -c celltree_sbnd.fcl -s lynn-sim.root -o tmp.root
+
+
+lar -n 1 --nskip 0 -c wcls-img-clus.fcl -s avinay-mar-05.root -o tmp.root
+unzip -o mabc-apa1-face1.zip -d bee
+./zip-upload.sh
 ```
 
 ### Reco dump

@@ -5,3 +5,7 @@ bee
 *.db
 *.zip
 *.swp
+*.gz
+*.npz
+venv
+__pycache__
