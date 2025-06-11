@@ -9,3 +9,4 @@ bee
 *.npz
 venv
 __pycache__
+tmp
