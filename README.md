@@ -1,5 +1,12 @@
 # sbnd-dl-clustering
 
+### workflow
+```bash
+lar -n 2 --nskip 0 -c wcls-img-clus.fcl -s avinay-mar-05.root -o tmp.root
+lar -n 2 --nskip 0 -c celltree_sbnd.fcl -s avinay-mar-05.root -o tmp.root
+
+```
+
 ## quick setup on gpvms
 This is based on local build of `wirecell`, `larwirecell` off the `sbndcode v09_91_02`
 - wirecell branch: master: https://github.com/WireCell/wire-cell-toolkit/tree/master
