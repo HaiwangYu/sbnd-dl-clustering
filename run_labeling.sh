@@ -1,1 +1,0 @@
-python labeling.py --tru-prefix tru-apa1 --rec-prefix rec-apa1 --out-prefix rec-lab-apa1 --entries 0-1
