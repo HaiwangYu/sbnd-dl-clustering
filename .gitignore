@@ -7,6 +7,6 @@ bee
 *.swp
 *.gz
 *.npz
-venv
+venv*
 __pycache__
 tmp
