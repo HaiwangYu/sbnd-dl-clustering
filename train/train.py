@@ -7,8 +7,11 @@ import torch.nn.functional as F
 from torch_geometric.data import Data, DataLoader
 from torch_geometric.nn import EdgeConv
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.utils.class_weight import compute_class_weight
 import glob
 from tqdm import tqdm
+
+
 
 def load_labeled_data(data_dir, pattern):
     """
@@ -26,6 +29,39 @@ def load_labeled_data(data_dir, pattern):
         data = np.load(f)
         all_data.append(data)
     
+    return all_data
+
+def load_data_from_list(list_file):
+    """
+    Load data from files specified in a list file.
+    
+    Parameters:
+    -----------
+    list_file : str
+        Path to a text file containing paths to data files (one per line)
+        
+    Returns:
+    --------
+    list
+        List of loaded data items
+    """
+    all_data = []
+    
+    with open(list_file, 'r') as f:
+        file_paths = [line.strip() for line in f if line.strip()]
+    
+    if not file_paths:
+        raise FileNotFoundError(f"No file paths found in: {list_file}")
+    
+    print(f"Found {len(file_paths)} data files to load")
+    for file_path in tqdm(file_paths):
+        if not os.path.exists(file_path):
+            print(f"Warning: File {file_path} not found, skipping")
+            continue
+        data = np.load(file_path)
+        all_data.append(data)
+    
+    print(f"Successfully loaded {len(all_data)} data files")
     return all_data
 
 def build_graph(data_item):
@@ -64,7 +100,7 @@ def build_graph(data_item):
     
     return data
 
-def prepare_datasets(data_list, train_ratio=0.7, val_ratio=0.15):
+def prepare_datasets(data_list, train_ratio=0.5, val_ratio=0.5):
     """
     Prepare train, validation, and test datasets.
     """
@@ -80,6 +116,7 @@ def prepare_datasets(data_list, train_ratio=0.7, val_ratio=0.15):
     # Split into train, val, test
     train_size = int(len(graph_data) * train_ratio)
     val_size = int(len(graph_data) * val_ratio)
+    print(f"Train size: {train_size}, Validation size: {val_size}, Test size: {len(graph_data) - train_size - val_size}")
     
     train_indices = indices[:train_size]
     val_indices = indices[train_size:train_size+val_size]
@@ -132,10 +169,26 @@ class GNNModel(torch.nn.Module):
         
         return x
 
-def train_epoch(model, optimizer, loader, device):
+def train_epoch(model, optimizer, loader, device, class_weights=None):
     model.train()
     total_loss = 0
     
+    # If class_weights not provided, compute them
+    if class_weights is None:
+        # Collect all labels from the loader to compute class weights
+        all_labels = []
+        for data in loader:
+            all_labels.append(data.y.cpu().numpy())
+        all_labels = np.concatenate(all_labels)
+        
+        # Calculate class weights based on inverse frequency
+        class_weights = compute_class_weight('balanced', classes=np.unique(all_labels), y=all_labels)
+        class_weights = torch.tensor(class_weights, dtype=torch.float).to(device)
+        
+        # Create a new loader with the same dataset to restart iteration
+        loader = DataLoader(loader.dataset, batch_size=loader.batch_size, shuffle=True)
+    
+    # Actual training loop
     for data in loader:
         data = data.to(device)
         optimizer.zero_grad()
@@ -143,8 +196,8 @@ def train_epoch(model, optimizer, loader, device):
         # Forward pass
         out = model(data)
         
-        # Loss calculation (node-wise classification)
-        loss = F.cross_entropy(out, data.y)
+        # Use weighted loss
+        loss = F.cross_entropy(out, data.y, weight=class_weights)
         
         # Backpropagation
         loss.backward()
@@ -174,6 +227,8 @@ def evaluate(model, loader, device):
             all_labels.append(data.y.cpu().numpy())
     
     # Combine results from all batches
+    print(f"all_preds.shape: {len(all_preds)}")
+    print(f"all_labels.shape: {len(all_labels)}")
     all_preds = np.concatenate(all_preds)
     all_labels = np.concatenate(all_labels)
     
@@ -188,7 +243,8 @@ def evaluate(model, loader, device):
 def main():
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description='Train a GNN model for neutrino interaction classification')
-    parser.add_argument('--data-dir', required=True, help='Directory containing labeled data files')
+    parser.add_argument('--file-list', help='File containing list of data files to load')
+    parser.add_argument('--data-dir', help='Directory containing labeled data files')
     parser.add_argument('--pattern', default='rec-lab-apa1-*.npz', help='File pattern for labeled data')
     parser.add_argument('--epochs', type=int, default=2, help='Number of training epochs')
     parser.add_argument('--lr', type=float, default=0.001, help='Learning rate')
@@ -206,7 +262,12 @@ def main():
     
     # Load data
     print("Loading labeled data...")
-    data_list = load_labeled_data(args.data_dir, args.pattern)
+    if args.file_list:
+        data_list = load_data_from_list(args.file_list)
+    elif args.data_dir:
+        data_list = load_labeled_data(args.data_dir, args.pattern)
+    else:
+        raise ValueError("Either --file-list or --data-dir must be specified")
     
     # Prepare datasets
     print("Preparing datasets...")
@@ -227,9 +288,17 @@ def main():
     print("Starting training...")
     best_val_f1 = 0
     
+    all_labels = []
+    for data in train_loader:
+        all_labels.append(data.y.cpu().numpy())
+    all_labels = np.concatenate(all_labels)
+    class_weights = compute_class_weight('balanced', classes=np.unique(all_labels), y=all_labels)
+    class_weights = torch.tensor(class_weights, dtype=torch.float).to(device)
+
+    # Training loop
     for epoch in range(1, args.epochs + 1):
-        # Train for one epoch
-        loss = train_epoch(model, optimizer, train_loader, device)
+        # Train with pre-computed weights
+        loss = train_epoch(model, optimizer, train_loader, device, class_weights)
         
         # Evaluate on validation set
         val_acc, val_prec, val_rec, val_f1 = evaluate(model, val_loader, device)
@@ -237,7 +306,7 @@ def main():
         print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Val Acc: {val_acc:.4f}, Val F1: {val_f1:.4f}')
         
         # Save the model if validation F1 score improves
-        if val_f1 > best_val_f1:
+        if val_f1 >= best_val_f1:
             best_val_f1 = val_f1
             model_path = os.path.join(args.output_dir, 'best_model.pt')
             torch.save(model.state_dict(), model_path)
@@ -245,7 +314,8 @@ def main():
     
     # Load the best model and evaluate on test set
     model.load_state_dict(torch.load(os.path.join(args.output_dir, 'best_model.pt')))
-    test_acc, test_prec, test_rec, test_f1 = evaluate(model, test_loader, device)
+    # test_acc, test_prec, test_rec, test_f1 = evaluate(model, test_loader, device)
+    test_acc, test_prec, test_rec, test_f1 = evaluate(model, val_loader, device)
     
     print("\nTest set evaluation:")
     print(f"Accuracy: {test_acc:.4f}")

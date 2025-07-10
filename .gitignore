@@ -10,3 +10,5 @@ bee
 venv*
 __pycache__
 tmp
+sample
+artroot

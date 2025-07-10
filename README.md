@@ -1,5 +1,12 @@
 # sbnd-dl-clustering
 
+
+### make a data list
+
+```bash
+find /exp/sbnd/app/users/yuhw/dl-clustering/sample/20250618 -maxdepth 2 -name "rec-lab-apa1-*.npz" | sort >& 20250618.list
+```
+
 ### workflow
 ```bash
 lar -n 2 --nskip 0 -c wcls-img-clus.fcl -s avinay-mar-05.root -o tmp.root

@@ -16,6 +16,9 @@ echo ${PYTHONPATH} | tr ':' '\n'
 # output_path="$2"
 input_path="/exp/sbnd/app/users/yuhw/dl-clustering/sample/20250618/"
 output_path="/exp/sbnd/app/users/yuhw/dl-clustering/sample/20250618/"
+job_batchid=77451011
+start_job=1
+end_job=99
 
 # Ensure input path exists
 if [ ! -d "$input_path" ]; then
@@ -26,10 +29,14 @@ fi
 # Create output path if it doesn't exist
 mkdir -p "$output_path"
 
-# Find job folders matching the pattern <jobid>_<subjobid>
-for job_folder in $(find "$input_path" -maxdepth 1 -type d -name "[0-9]*_[0-9]*"); do
-    # Extract the job folder name from the full path
-    job_folder_name=$(basename "$job_folder")
+for ((job_id=start_job; job_id<=end_job; job_id++)); do
+    job_folder_name="${job_batchid}_${job_id}"
+    job_folder="$input_path/$job_folder_name"
+    # Check if the job folder exists
+    if [ ! -d "$job_folder" ]; then
+        echo "Warning: Job folder '$job_folder' does not exist, skipping..."
+        continue
+    fi
     
     echo "Processing job folder: $job_folder_name"
     
@@ -38,12 +45,12 @@ for job_folder in $(find "$input_path" -maxdepth 1 -type d -name "[0-9]*_[0-9]*"
     mkdir -p "$out_folder"
 
     # Find all files matching the pattern rec-apa0-*.npz
-    echo "Finding maximum event number in $job_folder ..."
+    # echo "Finding maximum event number in $job_folder ..."
     max_event=-1
     for npz_file in $(find "$job_folder" -name "rec-apa0-*.npz" -type f); do
         # Extract event number from filename
         filename=$(basename "$npz_file")
-        echo "Processing file: $filename"
+        # echo "Processing file: $filename"
         event_num=$(echo "$filename" | sed -E 's/rec-apa0-([0-9]+)\.npz/\1/')
         # Check if it's a valid number and compare with current max
         if [[ "$event_num" =~ ^[0-9]+$ ]]; then
