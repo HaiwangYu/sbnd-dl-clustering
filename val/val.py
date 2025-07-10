@@ -145,7 +145,7 @@ def calculate_metrics(all_labels, all_preds):
     return metrics
 
 class EventDisplay:
-    def __init__(self, data_items, predictions, truth_files=None, view_mode='3d', show_edges=False):
+    def __init__(self, data_items, predictions, truth_files=None):
         """
         Interactive event display for visualization.
         
@@ -162,8 +162,8 @@ class EventDisplay:
         self.predictions = predictions
         self.truth_files = truth_files
         self.current_index = 0
-        self.view_mode = view_mode  # Can be '3d', '2d_xy', '2d_xz', '2d_yz'
-        self.show_edges = show_edges
+        self.view_mode = '2d_xz'  # Can be '3d', '2d_xy', '2d_xz', '2d_yz'
+        self.show_edges = True
         
         self.fig = plt.figure(figsize=(15, 8))
         self.setup_plot()
