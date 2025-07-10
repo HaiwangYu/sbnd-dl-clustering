@@ -145,7 +145,7 @@ def calculate_metrics(all_labels, all_preds):
     return metrics
 
 class EventDisplay:
-    def __init__(self, data_items, predictions, truth_files=None):
+    def __init__(self, data_items, predictions, truth_files=None, view_mode='3d', show_edges=False):
         """
         Interactive event display for visualization.
         
@@ -162,26 +162,94 @@ class EventDisplay:
         self.predictions = predictions
         self.truth_files = truth_files
         self.current_index = 0
+        self.view_mode = view_mode  # Can be '3d', '2d_xy', '2d_xz', '2d_yz'
+        self.show_edges = show_edges
         
         self.fig = plt.figure(figsize=(15, 8))
         self.setup_plot()
         
     def setup_plot(self):
         """Set up the plot with buttons and initial display"""
-        self.ax_truth = self.fig.add_subplot(121, projection='3d')
-        self.ax_pred = self.fig.add_subplot(122, projection='3d')
+        # Create axis based on current view mode
+        self.create_axes()
         
         # Add buttons for navigation
-        ax_prev = plt.axes([0.3, 0.05, 0.1, 0.04])
-        ax_next = plt.axes([0.6, 0.05, 0.1, 0.04])
+        ax_prev = plt.axes([0.2, 0.05, 0.1, 0.04])
+        ax_next = plt.axes([0.35, 0.05, 0.1, 0.04])
+        
+        # Add buttons for view mode
+        ax_3d = plt.axes([0.5, 0.05, 0.05, 0.04])
+        ax_xy = plt.axes([0.57, 0.05, 0.05, 0.04])
+        ax_xz = plt.axes([0.64, 0.05, 0.05, 0.04])
+        ax_yz = plt.axes([0.71, 0.05, 0.05, 0.04])
+        
+        # Add toggle for edges
+        ax_edges = plt.axes([0.8, 0.05, 0.1, 0.04])
         
         self.btn_prev = Button(ax_prev, 'Previous')
         self.btn_next = Button(ax_next, 'Next')
+        self.btn_3d = Button(ax_3d, '3D')
+        self.btn_xy = Button(ax_xy, 'XY')
+        self.btn_xz = Button(ax_xz, 'XZ')
+        self.btn_yz = Button(ax_yz, 'YZ')
+        self.btn_edges = Button(ax_edges, 'Toggle Edges')
         
         self.btn_prev.on_clicked(self.previous_event)
         self.btn_next.on_clicked(self.next_event)
+        self.btn_3d.on_clicked(self.view_3d)
+        self.btn_xy.on_clicked(self.view_xy)
+        self.btn_xz.on_clicked(self.view_xz)
+        self.btn_yz.on_clicked(self.view_yz)
+        self.btn_edges.on_clicked(self.toggle_edges)
         
         self.update_display()
+    
+    def create_axes(self):
+        """Create appropriate axes based on view mode"""
+        # Clear previous axes
+        plt.clf()
+        self.fig = plt.gcf()
+        
+        if self.view_mode == '3d':
+            self.ax_truth = self.fig.add_subplot(121, projection='3d')
+            self.ax_pred = self.fig.add_subplot(122, projection='3d')
+        else:
+            self.ax_truth = self.fig.add_subplot(121)
+            self.ax_pred = self.fig.add_subplot(122)
+        
+        # Re-add the buttons after clearing
+        self.setup_buttons()
+        
+    def setup_buttons(self):
+        """Re-add buttons after changing axes"""
+        # Navigation buttons
+        ax_prev = plt.axes([0.2, 0.05, 0.1, 0.04])
+        ax_next = plt.axes([0.35, 0.05, 0.1, 0.04])
+        
+        # View mode buttons
+        ax_3d = plt.axes([0.5, 0.05, 0.05, 0.04])
+        ax_xy = plt.axes([0.57, 0.05, 0.05, 0.04])
+        ax_xz = plt.axes([0.64, 0.05, 0.05, 0.04])
+        ax_yz = plt.axes([0.71, 0.05, 0.05, 0.04])
+        
+        # Edge toggle button
+        ax_edges = plt.axes([0.8, 0.05, 0.1, 0.04])
+        
+        self.btn_prev = Button(ax_prev, 'Previous')
+        self.btn_next = Button(ax_next, 'Next')
+        self.btn_3d = Button(ax_3d, '3D')
+        self.btn_xy = Button(ax_xy, 'XY')
+        self.btn_xz = Button(ax_xz, 'XZ')
+        self.btn_yz = Button(ax_yz, 'YZ')
+        self.btn_edges = Button(ax_edges, 'Toggle Edges')
+        
+        self.btn_prev.on_clicked(self.previous_event)
+        self.btn_next.on_clicked(self.next_event)
+        self.btn_3d.on_clicked(self.view_3d)
+        self.btn_xy.on_clicked(self.view_xy)
+        self.btn_xz.on_clicked(self.view_xz)
+        self.btn_yz.on_clicked(self.view_yz)
+        self.btn_edges.on_clicked(self.toggle_edges)
         
     def update_display(self):
         """Update the display with the current event"""
@@ -199,43 +267,200 @@ class EventDisplay:
         labels = data['is_nu']
         binary_labels = (labels > 0).astype(int)
         
-        # Plot truth
+        # Create masks for filtering
         neutrino_mask = binary_labels == 1
         non_neutrino_mask = binary_labels == 0
-        
-        self.ax_truth.scatter(x[neutrino_mask], y[neutrino_mask], z[neutrino_mask], 
-                             c='blue', marker='o', alpha=0.6, label='Neutrino (Truth)')
-        self.ax_truth.scatter(x[non_neutrino_mask], y[non_neutrino_mask], z[non_neutrino_mask], 
-                             c='gray', marker='.', alpha=0.2, label='Non-Neutrino (Truth)')
-        
-        # Plot predictions
         pred_neutrino_mask = preds == 1
         pred_non_neutrino_mask = preds == 0
         
-        self.ax_pred.scatter(x[pred_neutrino_mask], y[pred_neutrino_mask], z[pred_neutrino_mask], 
-                           c='red', marker='o', alpha=0.6, label='Neutrino (Pred)')
-        self.ax_pred.scatter(x[pred_non_neutrino_mask], y[pred_non_neutrino_mask], z[pred_non_neutrino_mask], 
-                           c='gray', marker='.', alpha=0.2, label='Non-Neutrino (Pred)')
+        # Plot differently based on view mode
+        if self.view_mode == '3d':
+            # Truth plot - neutrinos
+            self.ax_truth.scatter(
+                x[neutrino_mask], y[neutrino_mask], z[neutrino_mask], 
+                c='blue', marker='o', alpha=0.6, label='Neutrino (Truth)'
+            )
+            
+            # Truth plot - non-neutrinos
+            self.ax_truth.scatter(
+                x[non_neutrino_mask], y[non_neutrino_mask], z[non_neutrino_mask], 
+                c='gray', marker='.', alpha=0.2, label='Non-Neutrino (Truth)'
+            )
+            
+            # Prediction plot - neutrinos
+            self.ax_pred.scatter(
+                x[pred_neutrino_mask], y[pred_neutrino_mask], z[pred_neutrino_mask], 
+                c='red', marker='o', alpha=0.6, label='Neutrino (Pred)'
+            )
+            
+            # Prediction plot - non-neutrinos
+            self.ax_pred.scatter(
+                x[pred_non_neutrino_mask], y[pred_non_neutrino_mask], z[pred_non_neutrino_mask], 
+                c='gray', marker='.', alpha=0.2, label='Non-Neutrino (Pred)'
+            )
+        else:
+            # 2D plots
+            if self.view_mode == '2d_xy':
+                # Truth plot
+                self.ax_truth.scatter(
+                    x[neutrino_mask], y[neutrino_mask],
+                    c='blue', marker='o', alpha=0.6, label='Neutrino (Truth)'
+                )
+                self.ax_truth.scatter(
+                    x[non_neutrino_mask], y[non_neutrino_mask],
+                    c='gray', marker='.', alpha=0.2, label='Non-Neutrino (Truth)'
+                )
+                
+                # Prediction plot
+                self.ax_pred.scatter(
+                    x[pred_neutrino_mask], y[pred_neutrino_mask],
+                    c='red', marker='o', alpha=0.6, label='Neutrino (Pred)'
+                )
+                self.ax_pred.scatter(
+                    x[pred_non_neutrino_mask], y[pred_non_neutrino_mask],
+                    c='gray', marker='.', alpha=0.2, label='Non-Neutrino (Pred)'
+                )
+                
+            elif self.view_mode == '2d_xz':
+                # Truth plot
+                self.ax_truth.scatter(
+                    x[neutrino_mask], z[neutrino_mask],
+                    c='blue', marker='o', alpha=0.6, label='Neutrino (Truth)'
+                )
+                self.ax_truth.scatter(
+                    x[non_neutrino_mask], z[non_neutrino_mask],
+                    c='gray', marker='.', alpha=0.2, label='Non-Neutrino (Truth)'
+                )
+                
+                # Prediction plot
+                self.ax_pred.scatter(
+                    x[pred_neutrino_mask], z[pred_neutrino_mask],
+                    c='red', marker='o', alpha=0.6, label='Neutrino (Pred)'
+                )
+                self.ax_pred.scatter(
+                    x[pred_non_neutrino_mask], z[pred_non_neutrino_mask],
+                    c='gray', marker='.', alpha=0.2, label='Non-Neutrino (Pred)'
+                )
+                
+            else:  # '2d_yz'
+                # Truth plot
+                self.ax_truth.scatter(
+                    y[neutrino_mask], z[neutrino_mask],
+                    c='blue', marker='o', alpha=0.6, label='Neutrino (Truth)'
+                )
+                self.ax_truth.scatter(
+                    y[non_neutrino_mask], z[non_neutrino_mask],
+                    c='gray', marker='.', alpha=0.2, label='Non-Neutrino (Truth)'
+                )
+                
+                # Prediction plot
+                self.ax_pred.scatter(
+                    y[pred_neutrino_mask], z[pred_neutrino_mask],
+                    c='red', marker='o', alpha=0.6, label='Neutrino (Pred)'
+                )
+                self.ax_pred.scatter(
+                    y[pred_non_neutrino_mask], z[pred_non_neutrino_mask],
+                    c='gray', marker='.', alpha=0.2, label='Non-Neutrino (Pred)'
+                )
+        
+        # Draw edges if requested
+        if self.show_edges and 'edges' in data:
+            edges = data['edges']
+            # Loop through edges and plot them
+            for edge in edges:
+                i, j = edge  # Get indices of connected nodes
+                if i < len(points) and j < len(points):  # Ensure valid indices
+                    if self.view_mode == '3d':
+                        self.ax_truth.plot([x[i], x[j]], [y[i], y[j]], [z[i], z[j]], 'k-', alpha=0.1)
+                        self.ax_pred.plot([x[i], x[j]], [y[i], y[j]], [z[i], z[j]], 'k-', alpha=0.1)
+                    elif self.view_mode == '2d_xy':
+                        self.ax_truth.plot([x[i], x[j]], [y[i], y[j]], 'k-', alpha=0.1)
+                        self.ax_pred.plot([x[i], x[j]], [y[i], y[j]], 'k-', alpha=0.1)
+                    elif self.view_mode == '2d_xz':
+                        self.ax_truth.plot([x[i], x[j]], [z[i], z[j]], 'k-', alpha=0.1)
+                        self.ax_pred.plot([x[i], x[j]], [z[i], z[j]], 'k-', alpha=0.1)
+                    else:  # '2d_yz'
+                        self.ax_truth.plot([y[i], y[j]], [z[i], z[j]], 'k-', alpha=0.1)
+                        self.ax_pred.plot([y[i], y[j]], [z[i], z[j]], 'k-', alpha=0.1)
         
         # Set titles and labels
         self.ax_truth.set_title(f'Truth (Event {self.current_index+1}/{len(self.data_items)})')
         self.ax_pred.set_title('Prediction')
         
-        for ax in [self.ax_truth, self.ax_pred]:
-            ax.set_xlabel('X')
-            ax.set_ylabel('Y')
-            ax.set_zlabel('Z')
-            ax.legend()
+        # Set axis labels based on view mode
+        if self.view_mode == '3d':
+            self.ax_truth.set_xlabel('X')
+            self.ax_truth.set_ylabel('Y')
+            self.ax_truth.set_zlabel('Z')
+            self.ax_pred.set_xlabel('X')
+            self.ax_pred.set_ylabel('Y')
+            self.ax_pred.set_zlabel('Z')
+        elif self.view_mode == '2d_xy':
+            self.ax_truth.set_xlabel('X')
+            self.ax_truth.set_ylabel('Y')
+            self.ax_pred.set_xlabel('X')
+            self.ax_pred.set_ylabel('Y')
+        elif self.view_mode == '2d_xz':
+            self.ax_truth.set_xlabel('X')
+            self.ax_truth.set_ylabel('Z')
+            self.ax_pred.set_xlabel('X')
+            self.ax_pred.set_ylabel('Z')
+        else:  # '2d_yz'
+            self.ax_truth.set_xlabel('Y')
+            self.ax_truth.set_ylabel('Z')
+            self.ax_pred.set_xlabel('Y')
+            self.ax_pred.set_ylabel('Z')
         
-        # Ensure the same view for both plots
-        self.ax_pred.view_init(elev=self.ax_truth.elev, azim=self.ax_truth.azim)
+        # Add legend
+        self.ax_truth.legend()
+        self.ax_pred.legend()
         
-        # Show file name
-        if hasattr(self.data_items[self.current_index], 'file_path'):
-            plt.suptitle(f"File: {self.data_items[self.current_index].file_path}")
+        # If in 3D mode, ensure the same view for both plots
+        if self.view_mode == '3d':
+            self.ax_pred.view_init(elev=self.ax_truth.elev, azim=self.ax_truth.azim)
         
+        # Show file name if available
+        if hasattr(data, 'file_path'):
+            plt.suptitle(f"File: {data.file_path}")
+        
+        # Add view mode and edges status to title
+        mode_str = self.view_mode.upper().replace('2D_', '')
+        edges_str = "Edges: ON" if self.show_edges else "Edges: OFF"
+        plt.figtext(0.5, 0.01, f"View: {mode_str} | {edges_str}", 
+                   ha='center', fontsize=10, bbox=dict(facecolor='white', alpha=0.5))
+        
+        plt.tight_layout(rect=[0, 0.07, 1, 0.95])  # Adjust for button space
         plt.draw()
-        
+    
+    def view_3d(self, event):
+        """Switch to 3D view"""
+        self.view_mode = '3d'
+        self.create_axes()
+        self.update_display()
+    
+    def view_xy(self, event):
+        """Switch to XY projection"""
+        self.view_mode = '2d_xy'
+        self.create_axes()
+        self.update_display()
+    
+    def view_xz(self, event):
+        """Switch to XZ projection"""
+        self.view_mode = '2d_xz'
+        self.create_axes()
+        self.update_display()
+    
+    def view_yz(self, event):
+        """Switch to YZ projection"""
+        self.view_mode = '2d_yz'
+        self.create_axes()
+        self.update_display()
+    
+    def toggle_edges(self, event):
+        """Toggle edge display"""
+        self.show_edges = not self.show_edges
+        self.update_display()
+    
     def next_event(self, event):
         """Go to the next event"""
         if self.current_index < len(self.data_items) - 1:
@@ -250,6 +475,7 @@ class EventDisplay:
     
     def show(self):
         """Show the interactive display"""
+        plt.tight_layout(rect=[0, 0.07, 1, 0.95])  # Adjust for button space
         plt.show()
 
 def main():
