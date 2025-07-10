@@ -1,1 +1,1 @@
-python val.py --model ../models/best_model.pt --file-list ../sample/20250618-partial-val.list --display
+python val.py --model ../models/2025-07-09.pt --file-list ../sample/20250618-partial-val.list --display

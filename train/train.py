@@ -100,6 +100,35 @@ def build_graph(data_item):
     
     return data
 
+def prepare_loader(data_list, batch_size=1, shuffle=False):
+    """
+    Prepare a data loader from a list of data items.
+    
+    Parameters:
+    -----------
+    data_list : list
+        List of data items to convert to PyTorch Geometric Data objects
+    batch_size : int, optional
+        Batch size for the loader
+    shuffle : bool, optional
+        Whether to shuffle the data
+        
+    Returns:
+    --------
+    DataLoader
+        PyTorch Geometric DataLoader
+    """
+    # Convert data to PyTorch Geometric Data objects
+    graph_data = []
+    for data_item in data_list:
+        graph = build_graph(data_item)
+        graph_data.append(graph)
+    
+    # Create data loader
+    loader = DataLoader(graph_data, batch_size=batch_size, shuffle=shuffle)
+    
+    return loader
+
 def prepare_datasets(data_list, train_ratio=0.5, val_ratio=0.5):
     """
     Prepare train, validation, and test datasets.
@@ -227,8 +256,8 @@ def evaluate(model, loader, device):
             all_labels.append(data.y.cpu().numpy())
     
     # Combine results from all batches
-    print(f"all_preds.shape: {len(all_preds)}")
-    print(f"all_labels.shape: {len(all_labels)}")
+    # print(f"all_preds.shape: {len(all_preds)}")
+    # print(f"all_labels.shape: {len(all_labels)}")
     all_preds = np.concatenate(all_preds)
     all_labels = np.concatenate(all_labels)
     
@@ -243,7 +272,10 @@ def evaluate(model, loader, device):
 def main():
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description='Train a GNN model for neutrino interaction classification')
-    parser.add_argument('--file-list', help='File containing list of data files to load')
+    parser.add_argument('--train-file-list', help='File containing list of training data files')
+    parser.add_argument('--val-file-list', help='File containing list of validation data files')
+    parser.add_argument('--test-file-list', help='File containing list of test data files')
+    parser.add_argument('--file-list', help='File containing list of all data files (if not using separate lists)')
     parser.add_argument('--data-dir', help='Directory containing labeled data files')
     parser.add_argument('--pattern', default='rec-lab-apa1-*.npz', help='File pattern for labeled data')
     parser.add_argument('--epochs', type=int, default=2, help='Number of training epochs')
@@ -260,18 +292,41 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
     
-    # Load data
-    print("Loading labeled data...")
-    if args.file_list:
-        data_list = load_data_from_list(args.file_list)
-    elif args.data_dir:
-        data_list = load_labeled_data(args.data_dir, args.pattern)
+    # Load data based on provided arguments
+    if args.train_file_list and args.val_file_list:
+        # Load separate train, validation, and optionally test data
+        print("Loading training data...")
+        train_data = load_data_from_list(args.train_file_list)
+        
+        print("Loading validation data...")
+        val_data = load_data_from_list(args.val_file_list)
+        
+        if args.test_file_list:
+            print("Loading test data...")
+            test_data = load_data_from_list(args.test_file_list)
+        else:
+            # If no test set provided, use validation set for final evaluation
+            test_data = val_data
+            
+        # Prepare data loaders directly without random splitting
+        print("Preparing data loaders...")
+        train_loader = prepare_loader(train_data, batch_size=1, shuffle=True)
+        val_loader = prepare_loader(val_data, batch_size=1, shuffle=False)
+        test_loader = prepare_loader(test_data, batch_size=1, shuffle=False)
+        
     else:
-        raise ValueError("Either --file-list or --data-dir must be specified")
-    
-    # Prepare datasets
-    print("Preparing datasets...")
-    train_loader, val_loader, test_loader = prepare_datasets(data_list)
+        # Fall back to the original approach with random splitting
+        print("Loading labeled data...")
+        if args.file_list:
+            data_list = load_data_from_list(args.file_list)
+        elif args.data_dir:
+            data_list = load_labeled_data(args.data_dir, args.pattern)
+        else:
+            raise ValueError("Either --train-file-list and --val-file-list, or --file-list, or --data-dir must be specified")
+        
+        # Prepare datasets with random splitting
+        print("Preparing datasets with random splitting...")
+        train_loader, val_loader, test_loader = prepare_datasets(data_list)
     
     # Get input dimension from the first sample
     sample_data = train_loader.dataset[0]
@@ -288,15 +343,21 @@ def main():
     print("Starting training...")
     best_val_f1 = 0
     
+    # Compute class weights once before training
     all_labels = []
-    for data in train_loader:
+    for data in tqdm(train_loader, desc="Computing class weights"):
         all_labels.append(data.y.cpu().numpy())
     all_labels = np.concatenate(all_labels)
     class_weights = compute_class_weight('balanced', classes=np.unique(all_labels), y=all_labels)
     class_weights = torch.tensor(class_weights, dtype=torch.float).to(device)
+    
+    # Show class distribution
+    unique_labels, counts = np.unique(all_labels, return_counts=True)
+    print(f"Class distribution: {dict(zip(unique_labels, counts))}")
+    print(f"Class weights: {class_weights.cpu().numpy()}")
 
-    # Training loop
-    for epoch in range(1, args.epochs + 1):
+    # Training loop with progress bar
+    for epoch in tqdm(range(1, args.epochs + 1), desc="Training epochs"):
         # Train with pre-computed weights
         loss = train_epoch(model, optimizer, train_loader, device, class_weights)
         
