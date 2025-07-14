@@ -45,6 +45,10 @@ def get_isnu_labels(truth_file, g2f_file, max_distance=5):
     
     # For each point in points, get the truth_data 'q' value of its nearest neighbor
     # If distance > max_distance, label as -2
+    # -1: for all truth points that cannot be backtracked
+    # 0: has a backtracked truth point, but not a kBeamNeutrino
+    # 1: has a backtracked truth point and is a kBeamNeutrino
+    # -2: the KDTree search did not find a point within max_distance
     isnu = np.array([-2 if dist > max_distance else truth_data['q'][idx] 
                     for dist, idx in zip(distances.flatten(), indices.flatten())])
     
